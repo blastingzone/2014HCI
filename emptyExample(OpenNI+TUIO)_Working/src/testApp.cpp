@@ -1,4 +1,5 @@
 #include "testApp.h"
+#include "Config.h"
 
 #define STEP 5
 
@@ -6,90 +7,101 @@
 void testApp::setup() {
 
     ofSetLogLevel(OF_LOG_VERBOSE);
-
-    openNIDevice.setup();//FromXML("openni/config/ofxopenni_config.xml");
+	
+    openNIDevice.setup();
     openNIDevice.setLogLevel(OF_LOG_VERBOSE);
+	openNIDevice.setSkeletonProfile(XN_SKEL_PROFILE_ALL);
+	openNIDevice.setResolution(WINDOW_WIDTH, WINDOW_HEIGHT, 30);
     openNIDevice.addDepthGenerator();
-    openNIDevice.addImageGenerator();   // comment this out
+    openNIDevice.addImageGenerator();
+	openNIDevice.addUserGenerator();
+	openNIDevice.setMaxNumUsers(1);
+	openNIDevice.setMirror(true);
+	openNIDevice.setRegister(true);
     openNIDevice.start();
-    //openNIDevice.addInfraGenerator(); // and uncomment this to see infrared generator
-                                        // or press the 'i' key when running
+	openNIDevice.setFrame(30);
 
-    verdana.loadFont(ofToDataPath("verdana.ttf"), 24);
+	verdana.loadFont(ofToDataPath("NanumGothicBold.ttf"), 24);
+	
+	//-----------------------object manager
+	m_ObjectManager = new ObjectManager();
+	m_ObjectManager->Init();
+
+	//-----------------------timer
+	m_PreviousTime = ofGetElapsedTimeMillis();
 }
 
 //--------------------------------------------------------------
 void testApp::update(){
     openNIDevice.update();
+	if (openNIDevice.getNumTrackedUsers() == 0)
+	{
+		//-----------------------timer
+		m_PreviousTime = ofGetElapsedTimeMillis();
+		return;
+	}
+	
+	//---------------------update timer
+	m_CurrentTime = ofGetElapsedTimeMillis();
+	float diff = ( m_CurrentTime - m_PreviousTime ) / 1000;
+	m_PreviousTime = m_CurrentTime;
+
+	m_ObjectManager->Update(diff, m_LeftHandPosition, m_RightHandPosition);
+
+	if( m_ObjectManager->IsAllBroken() )
+	{
+		string msg = " WIN! ";
+		verdana.drawString(msg, ofRandom(0, WINDOW_WIDTH), ofRandom(0, WINDOW_HEIGHT));
+	}
 }
 
 //--------------------------------------------------------------
 void testApp::draw(){
+	ofSetHexColor(0x151515);
+	openNIDevice.drawImage(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	RenderSkeleton();
 
-	//ofSetColor(255, 255, 255);
-
-    //openNIDevice.drawDebug(); // draws all generators
-    //openNIDevice.drawDepth(0, 0);
-    //openNIDevice.drawImage(640, 0);
-	ofSetBackgroundColor(200);
-
-	// 센서로부터 각 점의 거리값을 받아서 저장
-	ofShortPixels depthMap = openNIDevice.getDepthRawPixels();
-
-	int depthMapIdx = 0;
-	// i는 화면의 세로축 / j는 가로축 : 키넥트 해상도가 640 * 480 이므로
-	for (unsigned int i = 0; i < 480; i += STEP)
-	{
-		for (unsigned int j = 0; j < 640; j += STEP)
-		{
-			// getDepthRawPixels()에 의해 반환되는 값은 2차원 배열이 아닌 1차원 배열의 형태이므로
-			// 필요한 거리값을 구하기 위해서는 1차원 배열의 인덱스 값의 계산이 필요
-			depthMapIdx = i * 640 + j;
-			
-			// 800이라는 거리를 기준으로 각 지점의 원의 크기와 색을 다르게 설정
-			if (depthMap[depthMapIdx] > 800)
-			{
-				ofSetColor(100);
-				ofEllipse(j * 2, i * 2, 5, 5);
-			}
-			else
-			{
-				ofSetColor(196, 15, 132);
-				ofEllipse(j * 2, i * 2, 10, 10);
-			}
-		}
-	}
-
-    ofSetColor(0, 255, 0);
 	string msg = " MILLIS: " + ofToString(ofGetElapsedTimeMillis()) + " FPS: " + ofToString(ofGetFrameRate());
 	verdana.drawString(msg, 20, ofGetHeight() - 26);
 
+	m_ObjectManager->Render();
+}
+
+void testApp::RenderSkeleton()
+{
+	int numUsers = openNIDevice.getNumTrackedUsers();
+
+	for ( int i = 0 ; i < numUsers; ++i )
+	{
+		openNIDevice.drawSkeleton(i);
+		ofxOpenNIUser &user = openNIDevice.getTrackedUser(i);
+
+		if (!user.isSkeleton())
+		{
+			break;
+		}
+
+		ofxOpenNIJoint leftHand = user.getJoint(JOINT_LEFT_HAND);
+		ofxOpenNIJoint leftShoulder = user.getJoint(JOINT_LEFT_SHOULDER);
+		ofxOpenNIJoint rightHand = user.getJoint(JOINT_RIGHT_HAND);
+		ofxOpenNIJoint rightShoulder = user.getJoint(JOINT_RIGHT_SHOULDER);
+
+		m_LeftHandPosition.x = leftHand.getProjectivePosition().x-15;
+		m_LeftHandPosition.y = leftHand.getProjectivePosition().y-15;
+		m_RightHandPosition.x = rightHand.getProjectivePosition().x-15;
+		m_RightHandPosition.y = rightHand.getProjectivePosition().y-15;
+	}
 }
 
 //--------------------------------------------------------------
 void testApp::exit(){
     openNIDevice.stop();
+	delete m_ObjectManager;
 }
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
 
-    switch (key) {
-        case 'i':
-            if (openNIDevice.isImageOn()){
-                openNIDevice.removeImageGenerator();
-                openNIDevice.addInfraGenerator();
-                break;
-            }
-            if (openNIDevice.isInfraOn()){
-                openNIDevice.removeInfraGenerator();
-                openNIDevice.addImageGenerator();
-                break;
-            }
-            break;
-        default:
-            break;
-    }
 }
 
 //--------------------------------------------------------------
@@ -109,7 +121,10 @@ void testApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void testApp::mousePressed(int x, int y, int button){
-
+	m_RightHandPosition.x = x + 100;
+	m_RightHandPosition.y = y;
+	m_LeftHandPosition.x = x - 100;
+	m_LeftHandPosition.y = y;
 }
 
 //--------------------------------------------------------------

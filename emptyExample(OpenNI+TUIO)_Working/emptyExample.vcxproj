@@ -103,8 +103,15 @@
     <ClCompile Include="..\..\..\addons\TUIO_CPP\TUIO\TuioClient.cpp" />
     <ClCompile Include="..\..\..\addons\TUIO_CPP\TUIO\TuioServer.cpp" />
     <ClCompile Include="..\..\..\addons\TUIO_CPP\TUIO\TuioTime.cpp" />
-    <ClCompile Include="src\ImageExample.cpp" />
+    <ClCompile Include="src\Album.cpp" />
+    <ClCompile Include="src\Ball.cpp" />
+    <ClCompile Include="src\Block.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\ManipulatedBar.cpp" />
+    <ClCompile Include="src\MultiTouch.cpp" />
+    <ClCompile Include="src\GameObject.cpp" />
+    <ClCompile Include="src\ObjectManager.cpp" />
+    <ClCompile Include="src\Pictures.cpp" />
     <ClCompile Include="src\testApp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -263,7 +270,15 @@
     <ClInclude Include="..\..\..\addons\TUIO_CPP\TUIO\TuioPoint.h" />
     <ClInclude Include="..\..\..\addons\TUIO_CPP\TUIO\TuioServer.h" />
     <ClInclude Include="..\..\..\addons\TUIO_CPP\TUIO\TuioTime.h" />
-    <ClInclude Include="src\ImageExample.h" />
+    <ClInclude Include="src\Album.h" />
+    <ClInclude Include="src\Ball.h" />
+    <ClInclude Include="src\Block.h" />
+    <ClInclude Include="src\Config.h" />
+    <ClInclude Include="src\ManipulatedBar.h" />
+    <ClInclude Include="src\MultiTouch.h" />
+    <ClInclude Include="src\GameObject.h" />
+    <ClInclude Include="src\ObjectManager.h" />
+    <ClInclude Include="src\Pictures.h" />
     <ClInclude Include="src\testApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

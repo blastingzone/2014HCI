@@ -3,6 +3,7 @@
 
 #include "ofxOpenNI.h"
 #include "ofMain.h"
+#include "ObjectManager.h"
 
 class testApp : public ofBaseApp{
 
@@ -19,11 +20,21 @@ public:
 	void mousePressed(int x, int y, int button);
 	void mouseReleased(int x, int y, int button);
 	void windowResized(int w, int h);
+	void RenderSkeleton();
 
-    ofTrueTypeFont verdana;
-    
+private:
+
+	ObjectManager* m_ObjectManager;
+
+	ofTrueTypeFont verdana;
+
 	ofxOpenNI openNIDevice;
-    
+
+	ofPoint m_LeftHandPosition;
+	ofPoint m_RightHandPosition;
+
+	float m_PreviousTime;
+	float m_CurrentTime;
 };
 
 #endif
